@@ -1,0 +1,78 @@
+#include <Adafruit_NeoPixel.h>
+#include <ESP8266WiFi.h>
+#include <ESP8266WebServer.h> 
+
+// Constants
+#define LED_PIN D4      // Pin connected to the data input of WS2812B LEDs
+#define NUM_LEDS 4      // Number of LEDs in the strip
+
+// Wi-Fi credentials
+const char* ssid = "YourWiFiNetwork";
+const char* password = "YourWiFiPassword";
+
+// Create NeoPixel object
+Adafruit_NeoPixel strip(NUM_LEDS, LED_PIN, NEO_GRB + NEO_KHZ800);
+
+// Web server object
+ESP8266WebServer server(80);
+
+// Variables
+unsigned long previousMillis = 0;  // Store the last time LEDs were updated
+unsigned long interval = 3000;     // Interval between color changes (in milliseconds)
+bool rainbowMode = false;          // Flag to enable/disable rainbow mode
+uint8_t hue = 0;                   // Hue value for rainbow sequence
+
+// Function to set all LEDs to a specific color
+void setColor(uint8_t r, uint8_t g, uint8_t b) {
+  for (int i = 0; i < NUM_LEDS; i++) {
+    strip.setPixelColor(i, r, g, b);
+  }
+  strip.show();
+}
+
+// Function to update LEDs with rainbow sequence
+void rainbow() {
+  for (int i = 0; i < NUM_LEDS; i++) {
+    strip.setPixelColor(i, Wheel((i * 256 / NUM_LEDS + hue) & 255));
+  }
+  strip.show();
+  hue++;
+}
+
+// Function to handle web server requests
+void handleRoot() {
+  String html = "<html><body>";
+  html += "<h1>LED Control</h1>";
+  html += "<p>Current Mode: " + String(rainbowMode ? "Rainbow" : "Blue/Red") + "</p>";
+  html += "<p><a href=\"/toggle\">Toggle Mode</a></p>";
+  html += "<p><a href=\"/color?r=255&g=0&b=0\">Red</a></p>";
+  html += "<p><a href=\"/color?r=0&g=0&b=255\">Blue</a></p>";
+  html += "</body></html>";
+  server.send(200, "text/html", html);
+}
+
+// Function to toggle between rainbow mode and blue/red mode
+void handleToggle() {
+  rainbowMode = !rainbowMode;
+  server.send(200, "text/plain", String(rainbowMode ? "Rainbow Mode" : "Blue/Red Mode"));
+}
+
+// Function to set LEDs to a specific color
+void handleColor() {
+  if (server.hasArg("r") && server.hasArg("g") && server.hasArg("b")) {
+    uint8_t r = server.arg("r").toInt();
+    uint8_t g = server.arg("g").toInt();
+    uint8_t b = server.arg("b").toInt();
+    setColor(r, g, b);
+    server.send(200, "text/plain", "LEDs set to the specified color");
+  } else {
+    server.send(400, "text/plain", "Invalid request");
+  }
+}
+
+// Helper function for rainbow sequence
+uint32_t Wheel(byte WheelPos) {
+  WheelPos = 255 - WheelPos;
+  if (WheelPos < 85) {
+    return strip.Color(255 - WheelPos * 3, 0, WheelPos * 3);
+ 

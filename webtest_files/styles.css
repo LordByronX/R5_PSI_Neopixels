@@ -1,0 +1,16 @@
+body {
+    text-align: center;
+  }
+  
+  #brightness-slider {
+    margin-bottom: 20px;
+  }
+  
+  #modes {
+    margin-top: 20px;
+  }
+  
+  button {
+    margin-right: 10px;
+  }
+  
